@@ -7,6 +7,7 @@ on:
       - 'Sources/**'
       - 'Package.swift'
       - 'build.sh'
+      - 'VERSION'
       - '.github/workflows/release-macos.yml'
     tags:
       - 'v*'
@@ -40,11 +41,16 @@ jobs:
               cp "$logo" "$RESOURCES_DIR/$(basename "$logo")"
           done
 
-          # Extract version from tag or fallback
+          # 版本号：tag 构建以 tag 为准（并与 VERSION 真源校验一致），分支构建沿用 VERSION
+          FILE_VERSION="$(tr -d '[:space:]' < VERSION)"
           VERSION="${GITHUB_REF_NAME#v}"
           if [ -z "$VERSION" ] || [ "$VERSION" = "main" ] || [ "$VERSION" = "master" ]; then
-              VERSION="2.5.1"
+              VERSION="$FILE_VERSION"
+          elif [ "$VERSION" != "$FILE_VERSION" ]; then
+              echo "❌ tag 版本（${VERSION}）与 VERSION 文件（${FILE_VERSION}）不一致，请先执行 ./scripts/bump-version.sh ${VERSION}"
+              exit 1
           fi
+          echo "🏷️  构建版本：$VERSION"
 
           cat << EOF > "$APP_DIR/Contents/Info.plist"
           <?xml version="1.0" encoding="UTF-8"?>

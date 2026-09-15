@@ -5,6 +5,7 @@ on:
     branches: [main, master]
     paths:
       - 'windows/**'
+      - 'VERSION'
       - '.github/workflows/release-windows.yml'
     tags:
       - 'v*'
@@ -27,6 +28,23 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Verify Version Consistency
+        shell: bash
+        run: |
+          FILE_VERSION="$(tr -d '[:space:]' < VERSION)"
+          CARGO_VERSION="$(grep -m1 '^version = ' windows/src-tauri/Cargo.toml | cut -d'"' -f2)"
+          PKG_VERSION="$(grep -m1 '"version"' windows/package.json | cut -d'"' -f4)"
+          echo "VERSION=$FILE_VERSION Cargo.toml=$CARGO_VERSION package.json=$PKG_VERSION"
+          if [ "$CARGO_VERSION" != "$FILE_VERSION" ] || [ "$PKG_VERSION" != "$FILE_VERSION" ]; then
+            echo "❌ 版本号不一致，请执行 ./scripts/bump-version.sh $FILE_VERSION 后提交。"
+            exit 1
+          fi
+          if [[ "${GITHUB_REF_NAME}" == v* ]] && [ "${GITHUB_REF_NAME#v}" != "$FILE_VERSION" ]; then
+            echo "❌ tag 版本（${GITHUB_REF_NAME#v}）与 VERSION（${FILE_VERSION}）不一致。"
+            exit 1
+          fi
+          echo "🏷️  版本号校验通过：$FILE_VERSION"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

@@ -53,6 +53,14 @@ choose_branch() {
 
 choose_branch
 
+# 版本号唯一真源：仓库根目录的 VERSION（升级用 ./scripts/bump-version.sh x.y.z）
+VERSION="$(tr -d '[:space:]' < VERSION 2>/dev/null || true)"
+if [ -z "$VERSION" ]; then
+    echo "❌ 读取不到 VERSION 文件（版本号唯一真源），请检查仓库根目录。" >&2
+    exit 1
+fi
+
+echo "🏷️  版本号：$VERSION"
 echo "🔨 正在编译 macOS ZTE Monitor 菜单栏程序..."
 swift build -c release
 
@@ -73,7 +81,7 @@ for logo in Sources/F50Monitor/China*Logo.svg Sources/F50Monitor/China*Logo.png;
     cp "$logo" "$RESOURCES_DIR/$(basename "$logo")"
 done
 
-cat << 'EOF' > "$APP_DIR/Contents/Info.plist"
+cat << EOF > "$APP_DIR/Contents/Info.plist"
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -89,9 +97,9 @@ cat << 'EOF' > "$APP_DIR/Contents/Info.plist"
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>2.5.1</string>
+    <string>$VERSION</string>
     <key>CFBundleVersion</key>
-    <string>2.5.1</string>
+    <string>$VERSION</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>LSUIElement</key>
@@ -110,6 +118,12 @@ EOF
 chmod +x "$MACOS_DIR/F50Monitor"
 codesign --force --sign - --timestamp=none "$APP_DIR"
 codesign --verify --deep --strict --verbose=2 "$APP_DIR"
+
+# 只构建不安装：ZTE_SKIP_INSTALL=1 ./build.sh（产物留在仓库根目录）
+if [ "${ZTE_SKIP_INSTALL:-0}" = "1" ]; then
+    echo "📦 已跳过安装（ZTE_SKIP_INSTALL=1），产物：$APP_DIR"
+    exit 0
+fi
 
 # 先退出正在运行的实例：运行中的 App 会让 /Applications 下的替换静默失败
 echo "🔄 正在退出旧实例..."
