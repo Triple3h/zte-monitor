@@ -417,8 +417,9 @@ impl F50Fetcher {
 
     async fn fetch_router_status(&self, router_base: &str, refresh_traffic: bool) -> Result<Value, String> {
         // V50 (MU3351) reports hardware metrics via temperature / cpu_temp;
-        // keep ic_temp for older F50 firmware.
-        let status_commands = "usb_port_switch,battery_charging,sms_received_flag,sms_unread_num,sms_sim_unread_num,sim_msisdn,battery_value,battery_vol_percent,network_signalbar,network_rssi,cr_version,iccid,imei,imsi,ipv6_wan_ipaddr,lan_ipaddr,mac_address,msisdn,network_information,Lte_ca_status,rssi,Z5g_rsrp,Z5g_snr,lte_rsrp,wifi_access_sta_num,loginfo,realtime_rx_thrpt,realtime_tx_thrpt,network_type,network_provider,ppp_status,temperature,cpu_temp,internal_temperature,ic_temp,cpu_utility,mem_utility,5g_rsrp,5g_rsrq,5g_snr,lte_rsrq,lte_snr,signalbar,qci,ambr,dl_ambr,ul_ambr";
+        // keep ic_temp for older F50 firmware. F50 Pro (MU3356) only reports
+        // cpu_temperature - the other temperature keys echo back blank strings.
+        let status_commands = "usb_port_switch,battery_charging,sms_received_flag,sms_unread_num,sms_sim_unread_num,sim_msisdn,battery_value,battery_vol_percent,network_signalbar,network_rssi,cr_version,iccid,imei,imsi,ipv6_wan_ipaddr,lan_ipaddr,mac_address,msisdn,network_information,Lte_ca_status,rssi,Z5g_rsrp,Z5g_snr,lte_rsrp,wifi_access_sta_num,loginfo,realtime_rx_thrpt,realtime_tx_thrpt,network_type,network_provider,ppp_status,temperature,cpu_temp,internal_temperature,ic_temp,cpu_temperature,cpu_utility,mem_utility,5g_rsrp,5g_rsrq,5g_snr,lte_rsrq,lte_snr,signalbar,qci,ambr,dl_ambr,ul_ambr";
         // flux_* 组显式请求：F50 Pro 的套餐限额/清零日只在这组键里（data_volume_* 回显空串）
         let traffic_commands = "realtime_rx_bytes,realtime_tx_bytes,monthly_tx_bytes,monthly_rx_bytes,day_rx_bytes,day_tx_bytes,data_volume_limit_size,data_volume_limit_unit,data_volume_clear_date,monthly_clear_date,billing_day,reset_day,traffic_clear_date,clear_date,flux_monthly_rx_bytes,flux_monthly_tx_bytes,flux_realtime_rx_bytes,flux_realtime_tx_bytes,flux_data_volume_limit_size,flux_data_volume_limit_unit,flux_data_volume_limit_switch,flux_clear_date";
         let commands = if refresh_traffic {
@@ -446,7 +447,7 @@ impl F50Fetcher {
     }
 
     async fn fetch_ufi_status(&self, ufi_base: &str, token: &str, refresh_traffic: bool) -> Result<Value, String> {
-        let status_commands = "status,battery_value,battery_charging,wifi_access_sta_num,network_provider,network_type,signalbar,network_signalbar,network_information,realtime_rx_thrpt,realtime_tx_thrpt,cpu_utility,mem_utility,ic_temp,cpu_temp,sms_unread_num,sms_sim_unread_num,qci,dl_ambr,ul_ambr,Z5g_rsrp,5g_rsrp,lte_rsrp,Z5g_snr,5g_snr,lte_snr,5g_rsrq,lte_rsrq,Nr_snr,nr_snr,sinr";
+        let status_commands = "status,battery_value,battery_charging,wifi_access_sta_num,network_provider,network_type,signalbar,network_signalbar,network_information,realtime_rx_thrpt,realtime_tx_thrpt,cpu_utility,mem_utility,ic_temp,cpu_temp,cpu_temperature,sms_unread_num,sms_sim_unread_num,qci,dl_ambr,ul_ambr,Z5g_rsrp,5g_rsrp,lte_rsrp,Z5g_snr,5g_snr,lte_snr,5g_rsrq,lte_rsrq,Nr_snr,nr_snr,sinr";
         let traffic_commands = "realtime_rx_bytes,realtime_tx_bytes,monthly_rx_bytes,monthly_tx_bytes,total_rx_bytes,total_tx_bytes,day_rx_bytes,day_tx_bytes,data_volume_limit_size,data_volume_limit_unit,data_volume_clear_date,monthly_clear_date,flux_monthly_rx_bytes,flux_monthly_tx_bytes,flux_data_volume_limit_size,flux_data_volume_limit_unit,flux_clear_date";
         let commands = if refresh_traffic {
             format!("{status_commands},{traffic_commands}")
@@ -783,7 +784,7 @@ impl F50Fetcher {
         if let Some(value) = first_positive_metric(&map, &["mem_utility", "mem_usage", "mem_percent", "memory_rate", "memory", "mem_used_percent"]) {
             status.mem_usage = value.clamp(0.0, 100.0);
         }
-        if let Some(mut value) = first_positive_metric(&map, &["cpu_temp", "temperature", "temp", "ic_temp", "soc_temp", "modem_temp", "internal_temperature", "chip_temp", "device_temp"]) {
+        if let Some(mut value) = first_positive_metric(&map, &["cpu_temp", "cpu_temperature", "temperature", "temp", "ic_temp", "soc_temp", "modem_temp", "internal_temperature", "chip_temp", "device_temp"]) {
             if value > 1000.0 { value /= 1000.0; }
             if value < 130.0 { status.temperature = value; }
         }
@@ -1112,7 +1113,7 @@ fn payload_hardware_fields(payload: &Value) -> (bool, bool, bool) {
     (
         has_positive_metric(&map, &["cpu_utility", "cpu_usage", "cpu_percent", "cpu_rate", "cpu", "cpu_load"]),
         has_positive_metric(&map, &["mem_utility", "mem_usage", "mem_percent", "memory_rate", "memory", "mem_used_percent"]),
-        has_positive_metric(&map, &["cpu_temp", "temperature", "temp", "ic_temp", "soc_temp", "modem_temp", "internal_temperature", "chip_temp", "device_temp"]),
+        has_positive_metric(&map, &["cpu_temp", "cpu_temperature", "temperature", "temp", "ic_temp", "soc_temp", "modem_temp", "internal_temperature", "chip_temp", "device_temp"]),
     )
 }
 

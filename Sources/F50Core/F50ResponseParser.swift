@@ -127,9 +127,9 @@ enum F50ResponseParser {
         copyFirstValue(in: &normalized, to: "cpu_utility", from: ["cpu_usage", "cpu_percent", "cpu_rate", "cpu", "cpu_load"])
         copyFirstValue(in: &normalized, to: "mem_utility", from: ["mem_usage", "mem_percent", "memory_rate", "memory", "mem_used_percent"])
 
-        // 温度多别名
+        // 温度多别名（cpu_temperature 是 F50 Pro 唯一有值的键）
         copyFirstValue(in: &normalized, to: "cpu_temp", from: [
-            "temperature", "temp", "soc_temp", "soc_thmzone", "chip_temp",
+            "cpu_temperature", "temperature", "temp", "soc_temp", "soc_thmzone", "chip_temp",
             "internal_temperature", "internal_temp", "device_temp", "battery_temp"
         ])
 

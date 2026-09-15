@@ -170,11 +170,21 @@ public struct F50Status: Equatable, Codable {
             let parsed = F50ResponseParser.parseDouble(value)
             if parsed > 0 { memUsage = min(100.0, max(0.0, parsed)) }
         }
-        let temperatureKeys = ["cpu_temp", "temperature", "temp", "ic_temp", "soc_temp", "modem_temp", "internal_temperature", "chip_temp", "device_temp"]
-        if let value = temperatureKeys.lazy.compactMap({ payload[$0] }).first {
+        // 温度多别名：F50 Pro（MU3356 / F50ProV1.0.0B25）只把真值放在 `cpu_temperature`，
+        // 而 `cpu_temp` / `temperature` / `ic_temp` 等键会回显空串。空值必须继续往后找，
+        // 否则首个"存在但为空"的键会把可用值挡在门外（同 flux_* 的坑）。
+        let temperatureKeys = [
+            "cpu_temp", "cpu_temperature", "temperature", "temp", "ic_temp",
+            "soc_temp", "modem_temp", "internal_temperature", "chip_temp", "device_temp"
+        ]
+        for key in temperatureKeys {
+            guard let value = payload[key], !F50ResponseParser.isBlankValue(value) else { continue }
             var parsed = F50ResponseParser.parseDouble(value)
             if parsed > 1_000 { parsed /= 1_000.0 }
-            if parsed > 0 && parsed < 130 { temperature = parsed }
+            if parsed > 0 && parsed < 130 {
+                temperature = parsed
+                break
+            }
         }
         if let value = payload["qci"] ?? payload["qci_val"] ?? payload["qos_qci"] {
             let str = String(describing: value).trimmingCharacters(in: .whitespacesAndNewlines)
