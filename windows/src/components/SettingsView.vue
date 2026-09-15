@@ -112,7 +112,7 @@
       <!-- Footer Info & Actions -->
       <div class="footer-links">
         <span>© 2026 Kold. All rights reserved.</span>
-        <a href="https://github.com/koldllc/f50-monitor" target="_blank" class="github-link">GitHub 项目链接</a>
+        <a href="https://github.com/Triple3h/zte-monitor" target="_blank" class="github-link">GitHub 项目链接</a>
       </div>
 
       <div class="save-actions">

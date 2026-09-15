@@ -120,7 +120,7 @@ public struct SettingsView: View {
                     .font(descriptionFont)
                     .foregroundColor(.secondary)
                 Spacer()
-                Link("GitHub 项目链接", destination: URL(string: "https://github.com/koldllc/f50-monitor")!)
+                Link("GitHub 项目链接", destination: URL(string: "https://github.com/Triple3h/zte-monitor")!)
                     .font(descriptionFont)
             }
             .padding(.horizontal, 16)

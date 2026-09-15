@@ -37,13 +37,13 @@
 
 ## 📦 各平台下载安装
 
-前往 [GitHub Releases](https://github.com/koldllc/f50-monitor/releases/latest) 下载最新稳定版本：
+前往 [GitHub Releases](https://github.com/Triple3h/zte-monitor/releases/latest) 下载最新稳定版本：
 
 | 平台 / 设备 | 推荐下载文件 | 说明 |
 | :--- | :--- | :--- |
-| 🍏 **macOS (苹果电脑)** | [**`zte-monitor-macos.zip`**](https://github.com/koldllc/f50-monitor/releases/latest) | 菜单栏常驻工具，解压即用（支持 Apple Silicon M 系列芯片与 Intel Mac） |
-| 🪟 **Windows (主流电脑)** | [**`zte-monitor-windows-x64.exe`**](https://github.com/koldllc/f50-monitor/releases/latest) | 适用 99% 常见 Windows 电脑（Intel / AMD 处理器），绿色单文件免安装 |
-| 🪟 **Windows (ARM 设备)** | [**`zte-monitor-windows-arm64.exe`**](https://github.com/koldllc/f50-monitor/releases/latest) | 适用高通骁龙 ARM 架构 Windows 设备（如 Surface Pro 11 等） |
+| 🍏 **macOS (苹果电脑)** | [**`zte-monitor-macos.zip`**](https://github.com/Triple3h/zte-monitor/releases/latest) | 菜单栏常驻工具，解压即用（支持 Apple Silicon M 系列芯片与 Intel Mac） |
+| 🪟 **Windows (主流电脑)** | [**`zte-monitor-windows-x64.exe`**](https://github.com/Triple3h/zte-monitor/releases/latest) | 适用 99% 常见 Windows 电脑（Intel / AMD 处理器），绿色单文件免安装 |
+| 🪟 **Windows (ARM 设备)** | [**`zte-monitor-windows-arm64.exe`**](https://github.com/Triple3h/zte-monitor/releases/latest) | 适用高通骁龙 ARM 架构 Windows 设备（如 Surface Pro 11 等） |
 
 > 🍏 **macOS 首次运行提示**：若提示“未识别的开发者”，请在 macOS **系统设置 ➔ 隐私与安全性** 中点击“仍要打开”。  
 

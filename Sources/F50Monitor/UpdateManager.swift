@@ -67,7 +67,8 @@ final class UpdateManager: ObservableObject {
         }
     }
 
-    private static let releaseAPI = URL(string: "https://api.github.com/repos/koldllc/f50-monitor/releases/latest")!
+    /// 本项目（fork 后）自己的发布仓库；自动更新只从这个仓库读取 Release。
+    private static let releaseAPI = URL(string: "https://api.github.com/repos/Triple3h/zte-monitor/releases/latest")!
     /// 新品牌名为 zte-monitor-macos.zip；旧名一并容忍，避免已发布的旧版本包无法被识别
     private static let expectedAssetNames = [
         "zte-monitor-macos.zip", "ZTE-Monitor-macOS.zip", "ZTE.Monitor.zip",
