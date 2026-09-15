@@ -23,3 +23,6 @@ windows/src-tauri/target/
 iOS/F50Monitor-iOS.xcodeproj/xcuserdata/
 *.xcuserstate
 windows-release/
+
+# 本地 AI 辅助数据（仅供本机使用，不入库）
+.codebuddy/
