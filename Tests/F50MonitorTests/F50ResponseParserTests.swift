@@ -74,6 +74,87 @@ final class F50ResponseParserTests: XCTestCase {
         )
     }
 
+    func testF50ProFluxAliasesRestorePackageLimitAndResetDay() {
+        // 真机抓包：F50 Pro（MU3356 / F50ProV1.0.0B25）80 端口把 data_volume_* / day_* / total_*
+        // 全部回显为空串，套餐限额与清零日只出现在 flux_* 键里。
+        let payload: [String: Any] = [
+            "cr_version": "MU3356V1.0.0B25",
+            "monthly_rx_bytes": 66336182109,
+            "monthly_tx_bytes": 17619097129,
+            "day_rx_bytes": "",
+            "day_tx_bytes": "",
+            "total_rx_bytes": "",
+            "total_tx_bytes": "",
+            "data_volume_limit_size": "",
+            "data_volume_limit_unit": "",
+            "data_volume_clear_date": "",
+            "flux_monthly_rx_bytes": 66336182109,
+            "flux_monthly_tx_bytes": 17619097129,
+            "flux_data_volume_limit_size": "200_1024",
+            "flux_data_volume_limit_unit": "data",
+            "flux_data_volume_limit_switch": 1,
+            "flux_clear_date": "1"
+        ]
+
+        let normalized = F50ResponseParser.normalizeTrafficAliases(payload)
+
+        // "200_1024" = 200GB
+        XCTAssertEqual(
+            F50ResponseParser.parseTrafficLimit(
+                size: normalized["data_volume_limit_size"],
+                unit: normalized["data_volume_limit_unit"]
+            ),
+            200 * 1024 * 1024 * 1024
+        )
+        XCTAssertEqual(F50ResponseParser.extractFirstValidResetDay(from: normalized), 1)
+        XCTAssertEqual(F50ResponseParser.parseUInt64(normalized["monthly_rx_bytes"] ?? 0), 66336182109)
+        // 固件不提供当日计数器，保持 0，交由本地观测兜底
+        XCTAssertEqual(F50ResponseParser.parseUInt64(normalized["day_rx_bytes"] ?? 0), 0)
+    }
+
+    func testBlankCanonicalCountersDoNotBlockFluxFallback() {
+        let payload: [String: Any] = [
+            "monthly_rx_bytes": "",
+            "monthly_tx_bytes": "0",
+            "total_rx_bytes": "",
+            "flux_monthly_rx_bytes": "777",
+            "flux_monthly_tx_bytes": "999"
+        ]
+
+        let normalized = F50ResponseParser.normalizeTrafficAliases(payload)
+
+        XCTAssertEqual(
+            F50ResponseParser.parseUInt64(F50ResponseParser.preferredMonthlyTrafficCounter(
+                in: normalized,
+                monthlyKey: "monthly_rx_bytes",
+                totalKey: "total_rx_bytes"
+            ) ?? 0),
+            777
+        )
+        // 规范键有值（含 "0"）时不被 flux_* 覆盖
+        XCTAssertEqual(F50ResponseParser.parseUInt64(normalized["monthly_tx_bytes"] ?? 0), 0)
+    }
+
+    func testPreferredMonthlyCounterSkipsBlankFallbackValues() {
+        let blankMonthlyWithTotal: [String: Any] = ["monthly_rx_bytes": "", "total_rx_bytes": "123456789"]
+        XCTAssertEqual(
+            F50ResponseParser.parseUInt64(F50ResponseParser.preferredMonthlyTrafficCounter(
+                in: blankMonthlyWithTotal,
+                monthlyKey: "monthly_rx_bytes",
+                totalKey: "total_rx_bytes"
+            ) ?? 0),
+            123456789
+        )
+
+        // 两者都为空串时视为设备未提供，而不是返回 0 覆盖上一轮结果
+        let allBlank: [String: Any] = ["monthly_rx_bytes": "", "total_rx_bytes": ""]
+        XCTAssertNil(F50ResponseParser.preferredMonthlyTrafficCounter(
+            in: allBlank,
+            monthlyKey: "monthly_rx_bytes",
+            totalKey: "total_rx_bytes"
+        ))
+    }
+
     func testQosRefreshesWhenConnectionContextChanges() {
         var previous = F50Status()
         var current = previous

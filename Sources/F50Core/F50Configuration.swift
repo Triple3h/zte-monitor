@@ -24,8 +24,10 @@ public enum F50Configuration {
     public static let kanoSignKey = "minikano_kOyXz0Ciz4V7wR0IeKmJFYFQ20jd"
     // 设备检测到的流量清零日 / 每日流量追踪
     public static let detectedTrafficResetDayDefaultsKey = "F50_DetectedTrafficResetDay"
-    public static let dailyTrafficDateDefaultsKey = "F50_DailyTrafficDate"
-    public static let dailyTrafficStartBytesDefaultsKey = "F50_DailyTrafficStartBytes"
+    // 当日流量本地观测（设备不上报 day_*_bytes 时按相邻采样增量累加）
+    public static let dailyTrafficObservedDateDefaultsKey = "F50_DailyTrafficObservedDate"
+    public static let dailyTrafficObservedBytesDefaultsKey = "F50_DailyTrafficObservedBytes"
+    public static let dailyTrafficLastSampleDefaultsKey = "F50_DailyTrafficLastSampleBytes"
 
     /// 旧版本已保存过地址的用户无需再次经过首次设置。
     public static var needsInitialSetup: Bool {

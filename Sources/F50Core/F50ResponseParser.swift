@@ -60,12 +60,15 @@ enum F50ResponseParser {
 
     /// 某些 F50 Pro 固件只回传 total_*_bytes；在缺少月度计数器时将其作为流量总量兜底。
     /// 明确的 monthly_*_bytes 始终优先，避免改变支持标准月度字段的设备行为。
+    /// 注意：固件会把无法提供的键回显为空串，空值必须视为缺失，否则兜底会被空串短路成 0。
     static func preferredMonthlyTrafficCounter(
         in payload: [String: Any],
         monthlyKey: String,
         totalKey: String
     ) -> Any? {
-        payload[monthlyKey] ?? payload[totalKey]
+        if let monthly = payload[monthlyKey], !isBlankValue(monthly) { return monthly }
+        if let total = payload[totalKey], !isBlankValue(total) { return total }
+        return nil
     }
 
     static func parseSMSMessages(_ json: [String: Any]) -> [F50SMSMessage]? {
@@ -87,6 +90,25 @@ enum F50ResponseParser {
                 tag: stringValue(row["tag"])
             )
         }
+    }
+
+    /// 补齐 `flux_*` 备用键：F50 Pro（MU3356 / F50ProV1.0.0B25）实测在 80 端口把
+    /// `data_volume_limit_size`、`data_volume_clear_date` 回显为空串，真值只出现在
+    /// `flux_data_volume_limit_size`（"200_1024"，即 200GB）与 `flux_clear_date`（"1"）里；
+    /// 月度累计同样有 `flux_monthly_rx_bytes` / `flux_monthly_tx_bytes` 两份。
+    /// 归一放在解析入口，80 与 2333 两条通道共用，避免"只剩 flux_* 键时套餐限额/清零日整块丢失"。
+    static func normalizeTrafficAliases(_ payload: [String: Any]) -> [String: Any] {
+        var normalized = payload
+
+        copyFirstValue(in: &normalized, to: "monthly_rx_bytes", from: ["flux_monthly_rx_bytes"])
+        copyFirstValue(in: &normalized, to: "monthly_tx_bytes", from: ["flux_monthly_tx_bytes"])
+        copyFirstValue(in: &normalized, to: "realtime_rx_bytes", from: ["flux_realtime_rx_bytes"])
+        copyFirstValue(in: &normalized, to: "realtime_tx_bytes", from: ["flux_realtime_tx_bytes"])
+        copyFirstValue(in: &normalized, to: "data_volume_limit_size", from: ["flux_data_volume_limit_size"])
+        copyFirstValue(in: &normalized, to: "data_volume_limit_unit", from: ["flux_data_volume_limit_unit"])
+        copyFirstValue(in: &normalized, to: "data_volume_clear_date", from: ["flux_clear_date"])
+
+        return normalized
     }
 
     static func normalizeUFIPayload(_ payload: [String: Any]) -> [String: Any] {
@@ -155,13 +177,24 @@ enum F50ResponseParser {
         to target: String,
         from aliases: [String]
     ) {
-        guard payload[target] == nil else { return }
+        // 设备常把"不支持的键"回显为空串；空串/NSNull 一律视为缺失，
+        // 否则空的规范键会把可用的备用键挡在门外（F50 Pro 的 flux_* 就属于这种情况）。
+        if let existing = payload[target], !isBlankValue(existing) { return }
         for alias in aliases {
-            if let value = payload[alias] {
+            if let value = payload[alias], !isBlankValue(value) {
                 payload[target] = value
                 return
             }
         }
+    }
+
+    /// 空串、纯空白与 NSNull 都视为"设备未提供该字段"。
+    static func isBlankValue(_ value: Any) -> Bool {
+        if value is NSNull { return true }
+        if let string = value as? String {
+            return string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+        return false
     }
 
     private static func stringValue(_ value: Any?) -> String {

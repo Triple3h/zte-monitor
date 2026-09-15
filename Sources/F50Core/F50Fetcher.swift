@@ -1487,7 +1487,7 @@ public class F50Fetcher: ObservableObject {
         // network_information dump 字段清零（返回空串）。因此这里绝不显式请求这
         // 四个命令，信号值统一由 network_information 的 dump（nr_rsrp/nr_rsrq/Nr_snr）
         // 提供，Z5g_rsrp 作为独立数据源保留作 RSRP 兑底。
-        let commands = "network_type,network_provider,signalbar,network_signalbar,network_information,Z5g_rsrp,Z5g_rsrq,Z5g_snr,5g_rsrp,5g_rsrq,5g_snr,lte_rsrp,lte_rsrq,lte_snr,wifi_access_sta_num,sms_unread_num,sms_sim_unread_num,wan_active_band,lte_band,lte_ca_pcell_band,nr5g_action_band,nr5g_action_nsa_band,ZCELLINFO_band,Z5g_CELLINFO_band,nr_ca_pcell_band,data_volume_limit_size,data_volume_limit_unit,data_volume_limit_switch,flux_data_volume_limit_size,flux_data_volume_limit_switch,data_volume_clear_day,monthly_clear_day,clear_day,data_volume_reset_day,billing_day,clear_date,reset_day,traffic_clear_date,flux_clear_date,realtime_rx_thrpt,realtime_tx_thrpt,realtime_rx_bytes,realtime_tx_bytes,monthly_rx_bytes,monthly_tx_bytes,total_rx_bytes,total_tx_bytes,temperature,cpu_temp,internal_temperature,ic_temp,cpu_utility,mem_utility,qci"
+        let commands = "network_type,network_provider,signalbar,network_signalbar,network_information,Z5g_rsrp,Z5g_rsrq,Z5g_snr,5g_rsrp,5g_rsrq,5g_snr,lte_rsrp,lte_rsrq,lte_snr,wifi_access_sta_num,sms_unread_num,sms_sim_unread_num,wan_active_band,lte_band,lte_ca_pcell_band,nr5g_action_band,nr5g_action_nsa_band,ZCELLINFO_band,Z5g_CELLINFO_band,nr_ca_pcell_band,data_volume_limit_size,data_volume_limit_unit,data_volume_limit_switch,flux_data_volume_limit_size,flux_data_volume_limit_unit,flux_data_volume_limit_switch,data_volume_clear_day,monthly_clear_day,clear_day,data_volume_reset_day,billing_day,clear_date,reset_day,traffic_clear_date,flux_clear_date,realtime_rx_thrpt,realtime_tx_thrpt,realtime_rx_bytes,realtime_tx_bytes,monthly_rx_bytes,monthly_tx_bytes,total_rx_bytes,total_tx_bytes,temperature,cpu_temp,internal_temperature,ic_temp,cpu_utility,mem_utility,qci"
         // 注意：minikano goform 要求 cmd 参数放在第一位，否则最后一个字段名会被拼坏
         guard let url = URL(string: "\(ufiBaseURL)/api/goform/goform_get_cmd_process?cmd=\(commands)&is_all=true") else {
             completion(nil)
@@ -1588,7 +1588,9 @@ public class F50Fetcher: ObservableObject {
         // V50 (MU3351) 会通过 temperature / cpu_temp 返回硬件指标；保留 ic_temp
         // 以兼容 F50 等旧固件。
         let statusCommands = "usb_port_switch,battery_charging,sms_received_flag,sms_unread_num,sms_sim_unread_num,sim_msisdn,battery_value,battery_vol_percent,network_signalbar,network_rssi,cr_version,iccid,imei,imsi,ipv6_wan_ipaddr,lan_ipaddr,mac_address,msisdn,network_information,Lte_ca_status,rssi,Z5g_rsrp,Z5g_snr,lte_rsrp,wifi_access_sta_num,loginfo,realtime_rx_thrpt,realtime_tx_thrpt,network_type,network_provider,ppp_status,temperature,cpu_temp,internal_temperature,ic_temp,cpu_utility,mem_utility,5g_rsrp,5g_rsrq,5g_snr,lte_rsrq,lte_snr,signalbar,qci,ambr,dl_ambr,ul_ambr"
-        let trafficCommands = "realtime_rx_bytes,realtime_tx_bytes,realtime_time,monthly_tx_bytes,monthly_rx_bytes,monthly_time,day_rx_bytes,day_tx_bytes,total_rx_bytes,total_tx_bytes,data_volume_limit_size,data_volume_limit_unit,data_volume_limit_switch,data_volume_clear_date,monthly_clear_date,clear_date,data_volume_clear_day,monthly_clear_day,clear_day,data_volume_reset_day,billing_day,traffic_clear_date"
+        // 显式请求 flux_* 组：F50 Pro 的套餐限额/清零日只放在这组键里（data_volume_* 回显空串），
+        // 不能依赖不同固件是否自动附带。
+        let trafficCommands = "realtime_rx_bytes,realtime_tx_bytes,realtime_time,monthly_tx_bytes,monthly_rx_bytes,monthly_time,day_rx_bytes,day_tx_bytes,total_rx_bytes,total_tx_bytes,data_volume_limit_size,data_volume_limit_unit,data_volume_limit_switch,data_volume_clear_date,monthly_clear_date,clear_date,data_volume_clear_day,monthly_clear_day,clear_day,data_volume_reset_day,billing_day,traffic_clear_date,flux_monthly_rx_bytes,flux_monthly_tx_bytes,flux_realtime_rx_bytes,flux_realtime_tx_bytes,flux_data_volume_limit_size,flux_data_volume_limit_unit,flux_data_volume_limit_switch,flux_clear_date"
         let cmdList = refreshTraffic ? "\(statusCommands),\(trafficCommands)" : statusCommands
 
         let targetURLString = "\(hostOnly)/goform/goform_get_cmd_process?multi_data=1&isTest=false&cmd=\(cmdList)"
@@ -2183,7 +2185,8 @@ public class F50Fetcher: ObservableObject {
     private func fetchPackageUsageMetrics(routerBaseURL: String, generation: UInt) {
         guard generation == requestGeneration else { return }
         // 附带实时速率字段：UFI 主路径(兜底)不提供 realtime_rx/tx_thrpt，速度仅来自 Router 接口
-        let cmdList = "monthly_rx_bytes,monthly_tx_bytes,data_volume_limit_size,data_volume_limit_unit,traffic_clear_date,realtime_rx_thrpt,realtime_tx_thrpt,temperature,cpu_temp,internal_temperature,ic_temp,qci"
+        // flux_* 组同样显式请求：F50 Pro 的套餐限额/清零日只在这组键里。
+        let cmdList = "monthly_rx_bytes,monthly_tx_bytes,data_volume_limit_size,data_volume_limit_unit,data_volume_limit_switch,traffic_clear_date,realtime_rx_thrpt,realtime_tx_thrpt,temperature,cpu_temp,internal_temperature,ic_temp,qci,flux_monthly_rx_bytes,flux_monthly_tx_bytes,flux_data_volume_limit_size,flux_data_volume_limit_unit,flux_clear_date"
         guard let url = URL(string: "\(routerBaseURL)/goform/goform_get_cmd_process?multi_data=1&isTest=false&cmd=\(cmdList)") else {
             finishExtension(generation: generation)
             return
@@ -2204,10 +2207,14 @@ public class F50Fetcher: ObservableObject {
                 defer { self.packageTask = nil }
                 guard let http = response as? HTTPURLResponse, http.statusCode == 200,
                        let data,
-                       let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                       dict["Error"] == nil,
-                       let rx = dict["monthly_rx_bytes"],
-                       let tx = dict["monthly_tx_bytes"] else {
+                       let raw = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       raw["Error"] == nil else {
+                    self.finishExtension(generation: generation)
+                    return
+                }
+                // F50 Pro 的月度累计与套餐限额只出现在 flux_* 键里，先归一再取值。
+                let dict = F50ResponseParser.normalizeTrafficAliases(raw)
+                guard let rx = dict["monthly_rx_bytes"], let tx = dict["monthly_tx_bytes"] else {
                     self.finishExtension(generation: generation)
                     return
                 }
@@ -2853,30 +2860,34 @@ public class F50Fetcher: ObservableObject {
         }
 
         if refreshTraffic {
+            // 80 端口与 2333 端口都可能只给 flux_* 备用键（F50 Pro 的套餐限额/清零日就是如此），
+            // 统一归一后再取值，避免整块流量信息因规范键回显空串而丢失。
+            let trafficDict = F50ResponseParser.normalizeTrafficAliases(dict)
+
             if let val = F50ResponseParser.preferredMonthlyTrafficCounter(
-                in: dict,
+                in: trafficDict,
                 monthlyKey: "monthly_rx_bytes",
                 totalKey: "total_rx_bytes"
             ) {
                 newStatus.monthlyRx = parseUInt64(val)
             }
             if let val = F50ResponseParser.preferredMonthlyTrafficCounter(
-                in: dict,
+                in: trafficDict,
                 monthlyKey: "monthly_tx_bytes",
                 totalKey: "total_tx_bytes"
             ) {
                 newStatus.monthlyTx = parseUInt64(val)
             }
-            if let val = dict["realtime_rx_bytes"] {
+            if let val = trafficDict["realtime_rx_bytes"] {
                 newStatus.realtimeRx = parseUInt64(val)
             }
-            if let val = dict["realtime_tx_bytes"] {
+            if let val = trafficDict["realtime_tx_bytes"] {
                 newStatus.realtimeTx = parseUInt64(val)
             }
-            if let val = dict["day_rx_bytes"] ?? dict["today_rx_bytes"] {
+            if let val = trafficDict["day_rx_bytes"] ?? trafficDict["today_rx_bytes"] {
                 newStatus.dailyRx = parseUInt64(val)
             }
-            if let val = dict["day_tx_bytes"] ?? dict["today_tx_bytes"] {
+            if let val = trafficDict["day_tx_bytes"] ?? trafficDict["today_tx_bytes"] {
                 newStatus.dailyTx = parseUInt64(val)
             }
 
@@ -2887,10 +2898,10 @@ public class F50Fetcher: ObservableObject {
                 currentSessionTotal: newStatus.sessionTotal
             )
             newStatus.trafficLimit = F50ResponseParser.parseTrafficLimit(
-                size: dict["data_volume_limit_size"],
-                unit: dict["data_volume_limit_unit"]
+                size: trafficDict["data_volume_limit_size"],
+                unit: trafficDict["data_volume_limit_unit"]
             )
-            let detectedDay = F50ResponseParser.extractFirstValidResetDay(from: dict)
+            let detectedDay = F50ResponseParser.extractFirstValidResetDay(from: trafficDict)
             if detectedDay > 0 {
                 self.routerDetectedTrafficResetDay = detectedDay
                 UserDefaults.standard.set(detectedDay, forKey: "F50_DetectedTrafficResetDay")
@@ -2947,33 +2958,28 @@ public class F50Fetcher: ObservableObject {
         status.dailyOffsetBytes = self.dailyOffsetBytes
     }
 
+    /// 设备上报 day_*_bytes 时的当日流量由 `F50Status.dailyTotal` 直接取用；
+    /// 这里只负责设备不上报当日的机型（如 F50 Pro，day_* 与 total_* 全为空串）的兜底：
+    /// 按相邻采样增量累加，见 `DailyTrafficTracker`。
     private func updateDailyTrafficTracking(currentMonthlyTotal: UInt64, currentSessionTotal: UInt64) -> UInt64 {
         let defaults = UserDefaults.standard
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         let todayStr = formatter.string(from: Date())
 
-        let lastDate = defaults.string(forKey: "F50_DailyTrafficDate") ?? ""
-        var startOfDayMonthlyBytes = UInt64(defaults.string(forKey: "F50_DailyTrafficStartBytes") ?? "") ?? 0
+        var tracker = DailyTrafficTracker(
+            day: defaults.string(forKey: F50Configuration.dailyTrafficObservedDateDefaultsKey) ?? "",
+            lastSample: UInt64(defaults.string(forKey: F50Configuration.dailyTrafficLastSampleDefaultsKey) ?? "") ?? 0,
+            observed: UInt64(defaults.string(forKey: F50Configuration.dailyTrafficObservedBytesDefaultsKey) ?? "") ?? 0
+        )
+        let observed = tracker.record(day: todayStr, monthlyTotal: currentMonthlyTotal)
 
-        if lastDate != todayStr {
-            defaults.set(todayStr, forKey: "F50_DailyTrafficDate")
-            defaults.set(String(currentMonthlyTotal), forKey: "F50_DailyTrafficStartBytes")
-            startOfDayMonthlyBytes = currentMonthlyTotal
-        } else if startOfDayMonthlyBytes == 0 && currentMonthlyTotal > 0 {
-            defaults.set(String(currentMonthlyTotal), forKey: "F50_DailyTrafficStartBytes")
-            startOfDayMonthlyBytes = currentMonthlyTotal
-        }
+        defaults.set(tracker.day, forKey: F50Configuration.dailyTrafficObservedDateDefaultsKey)
+        defaults.set(String(tracker.lastSample), forKey: F50Configuration.dailyTrafficLastSampleDefaultsKey)
+        defaults.set(String(tracker.observed), forKey: F50Configuration.dailyTrafficObservedBytesDefaultsKey)
 
-        var calculatedDaily: UInt64 = 0
-        if currentMonthlyTotal >= startOfDayMonthlyBytes {
-            calculatedDaily = currentMonthlyTotal - startOfDayMonthlyBytes
-        } else {
-            defaults.set(String(currentMonthlyTotal), forKey: "F50_DailyTrafficStartBytes")
-            calculatedDaily = 0
-        }
-
-        return max(calculatedDaily, currentSessionTotal)
+        // 本次会话累计（realtime_*）必定包含在同一天的真实用量里，用来兜住 App 刚启动时的观测空缺。
+        return max(observed, currentSessionTotal)
     }
 
     private func parseInt(_ val: Any) -> Int {
