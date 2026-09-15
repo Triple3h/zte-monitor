@@ -56,19 +56,23 @@ final class UpdateManager: ObservableObject {
         var errorDescription: String? {
             switch self {
             case .invalidResponse: return "无法读取版本信息"
-            case .missingAsset: return "新版本缺少 F50.Monitor.zip"
+            case .missingAsset: return "新版本缺少 ZTE.Monitor.zip"
             case .missingDigest: return "新版本缺少 SHA-256 校验值"
             case .digestMismatch: return "更新包完整性校验失败"
             case .invalidArchive: return "无法解压更新包"
             case .invalidApplication: return "更新包中的应用无效"
-            case .unsupportedLaunchLocation: return "请从 F50 Monitor.app 启动后再更新"
+            case .unsupportedLaunchLocation: return "请从 ZTE Monitor.app 启动后再更新"
             case .helperLaunchFailed: return "无法启动更新程序"
             }
         }
     }
 
     private static let releaseAPI = URL(string: "https://api.github.com/repos/koldllc/f50-monitor/releases/latest")!
-    private static let expectedAssetNames = ["f50-monitor-macos.zip", "F50-Monitor-macOS.zip", "F50.Monitor.zip"]
+    /// 新品牌名为 zte-monitor-macos.zip；旧名一并容忍，避免已发布的旧版本包无法被识别
+    private static let expectedAssetNames = [
+        "zte-monitor-macos.zip", "ZTE-Monitor-macOS.zip", "ZTE.Monitor.zip",
+        "f50-monitor-macos.zip", "F50-Monitor-macOS.zip", "F50.Monitor.zip"
+    ]
     private static let automaticUpdatesKey = "F50_AutomaticUpdates"
 
     @Published private(set) var state: State = .idle
@@ -124,7 +128,7 @@ final class UpdateManager: ObservableObject {
             do {
                 var request = URLRequest(url: Self.releaseAPI)
                 request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-                request.setValue("F50-Monitor/\(currentVersion)", forHTTPHeaderField: "User-Agent")
+                request.setValue("ZTE-Monitor/\(currentVersion)", forHTTPHeaderField: "User-Agent")
 
                 let (data, response) = try await URLSession.shared.data(for: request)
                 guard let httpResponse = response as? HTTPURLResponse,
@@ -205,8 +209,12 @@ final class UpdateManager: ObservableObject {
         process.waitUntilExit()
         guard process.terminationStatus == 0 else { throw UpdateError.invalidArchive }
 
-        let applicationURL = stagingDirectory.appendingPathComponent("F50 Monitor.app", isDirectory: true)
-        guard let bundle = Bundle(url: applicationURL),
+        // 新发布包里的 App 名为 ZTE Monitor.app；仍叫 F50 Monitor.app 的旧更新包也一并兼容
+        let candidateNames = ["ZTE Monitor.app", "F50 Monitor.app"]
+        guard let applicationURL = candidateNames
+                .map({ stagingDirectory.appendingPathComponent($0, isDirectory: true) })
+                .first(where: { FileManager.default.fileExists(atPath: $0.path) }),
+              let bundle = Bundle(url: applicationURL),
               bundle.bundleIdentifier == Bundle.main.bundleIdentifier,
               let stagedVersion = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
               Self.normalizedVersion(stagedVersion) == update.version else {

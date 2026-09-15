@@ -47,7 +47,7 @@ adb shell service call vendor.sprd.hardware.tool.IToolControl/default 3 \
 
 UFI-TOOLS 的 [`atModule.kt`](https://github.com/kanoqwq/UFI-TOOLS/blob/http-server-version/app/src/main/java/com/minikano/f50_sms/modules/at/atModule.kt) 仅把请求转为 `sendat -n <slot> -c <command>`，再由上述 `send_at.go` 调 Binder。其 [`ShellKano.kt`](https://github.com/kanoqwq/UFI-TOOLS/blob/http-server-version/app/src/main/java/com/minikano/f50_sms/utils/ShellKano.kt) 使用普通 `sh -c`，没有 `su`；Manifest 也没有共享 system UID。因此从公开实现看，**该 AT 查询本身不依赖 UFI 的 root shell**。
 
-`service call` 原始输出是 Parcel 十六进制转储。UFI 的解析器会提取每个 8 位十六进制字，按小端 UTF-16 还原文本；直接接入 F50 Monitor 时应在 macOS 端做同样解析，而不必安装 UFI APK。
+`service call` 原始输出是 Parcel 十六进制转储。UFI 的解析器会提取每个 8 位十六进制字，按小端 UTF-16 还原文本；直接接入 ZTE Monitor 时应在 macOS 端做同样解析，而不必安装 UFI APK。
 
 ### 权限边界
 

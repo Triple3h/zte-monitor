@@ -22,7 +22,7 @@ struct InitialSetupView: View {
                 .foregroundColor(F50Theme.blue)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("欢迎使用 F50 Monitor")
+                Text("欢迎使用 ZTE Monitor")
                     .font(.system(size: 22, weight: .bold, design: .rounded))
                 Text("先连接你的 F50 设备，之后可随时在设置中修改。")
                     .font(.system(size: 13))

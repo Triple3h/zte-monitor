@@ -1,12 +1,12 @@
-# F50 Monitor - App Store 提审与审核材料指南 🚀
+# ZTE Monitor - App Store 提审与审核材料指南 🚀
 
-本指南整理了 **F50 Monitor (iOS 版)** 提交至 Apple App Store 审核时所需的全部元数据、审核备注（Review Notes）、隐私申报与合规问答。
+本指南整理了 **ZTE Monitor (iOS 版)** 提交至 Apple App Store 审核时所需的全部元数据、审核备注（Review Notes）、隐私申报与合规问答。
 
 ---
 
 ## 📌 一、 基本版本与工程信息
 
-- **App 名称 (App Name)**: `F50 Monitor`
+- **App 名称 (App Name)**: `ZTE Monitor`
 - **副标题 (Subtitle)**: `5G随身WiFi状态监控与短信管理` (或 `MiFi Monitor & SMS Manager`)
 - **App 类别 (Category)**: `工具 (Utilities)` / `网络 (Networking)`
 - **版本号 (Marketing Version)**: `2.3.0`
@@ -25,7 +25,7 @@
 ```text
 Dear Apple Review Team,
 
-F50 Monitor is a companion utility designed for portable 5G Wi-Fi devices (such as ZTE F50 5G MiFi).
+ZTE Monitor is a companion utility designed for portable 5G Wi-Fi devices (such as ZTE F50 5G MiFi).
 
 [How to Test without Hardware - Demo Mode]:
 Since physical portable Wi-Fi hardware may not be available in your review lab, the app includes a fully functional "Demo Mode" with simulated 5G signal, speed fluctuations, traffic usage, and SMS interactions.
@@ -48,7 +48,7 @@ Thank you for your review!
 ```text
 尊敬的苹果审核团队：
 
-F50 Monitor 是专为 5G 随身 WiFi（如中兴 F50 等设备）打造的本地状态监控与短信管理工具。
+ZTE Monitor 是专为 5G 随身 WiFi（如中兴 F50 等设备）打造的本地状态监控与短信管理工具。
 
 【无硬件环境审核测试方法 - 演示模式】：
 考虑到审核实验室可能未配备该随身 WiFi 物理硬件，应用内已深度内置“演示模式 (Demo Mode)”：

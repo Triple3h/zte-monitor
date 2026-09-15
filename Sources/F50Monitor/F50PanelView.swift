@@ -316,7 +316,7 @@ struct F50PanelView: View {
                 Image(systemName: "antenna.radiowaves.left.and.right")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(F50Theme.blue)
-                Text("F50 Monitor")
+                Text("ZTE Monitor")
                     .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundColor(.primary)
             }

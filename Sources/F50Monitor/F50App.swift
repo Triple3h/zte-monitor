@@ -56,10 +56,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 14, weight: .bold)
             button.image = NSImage(
                 systemSymbolName: "antenna.radiowaves.left.and.right",
-                accessibilityDescription: "F50 Monitor"
+                accessibilityDescription: "ZTE Monitor"
             )?.withSymbolConfiguration(symbolConfiguration)
             button.imagePosition = .imageLeading
-            button.title = "F50 Monitor"
+            button.title = "ZTE Monitor"
             button.target = self
             button.action = #selector(togglePopover(_:))
         }
@@ -103,7 +103,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.initialSetupWindow = nil
         })
         let window = NSWindow(contentViewController: controller)
-        window.title = "F50 Monitor"
+        window.title = "ZTE Monitor"
         window.styleMask = [.titled]
         window.isReleasedWhenClosed = false
         window.center()
@@ -140,18 +140,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             } else {
                 button.title = "离线"
             }
-            button.toolTip = "F50 Monitor (未连接后台)"
+            button.toolTip = "ZTE Monitor (未连接后台)"
             return
         }
 
         switch mode {
         case .iconOnly:
             button.title = ""
-            button.toolTip = "F50 Monitor (\(status.networkType) · \(status.carrier))\n下载: \(F50Status.formatSpeed(status.dlSpeed))  上传: \(F50Status.formatSpeed(status.ulSpeed))"
+            button.toolTip = "ZTE Monitor (\(status.networkType) · \(status.carrier))\n下载: \(F50Status.formatSpeed(status.dlSpeed))  上传: \(F50Status.formatSpeed(status.ulSpeed))"
 
         case .speeds:
             button.title = "⬇ \(F50Status.formatSpeed(status.dlSpeed))  ⬆ \(F50Status.formatSpeed(status.ulSpeed))"
-            button.toolTip = "F50 Monitor: 实时速率"
+            button.toolTip = "ZTE Monitor: 实时速率"
 
         case .cpuMem:
             if status.cpuUsage > 0 || status.memUsage > 0 {
@@ -159,7 +159,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             } else {
                 button.title = "⬇ \(F50Status.formatSpeed(status.dlSpeed))"
             }
-            button.toolTip = "F50 Monitor: 硬件负载"
+            button.toolTip = "ZTE Monitor: 硬件负载"
 
         case .temperature:
             if status.temperature > 0 {
@@ -167,11 +167,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             } else {
                 button.title = status.networkType
             }
-            button.toolTip = "F50 Monitor: 芯片温度"
+            button.toolTip = "ZTE Monitor: 芯片温度"
 
         case .devices:
             button.title = "Wi-Fi: \(status.connectedDevices) 台"
-            button.toolTip = "F50 Monitor: Wi-Fi 连接设备数 (\(status.connectedDevices) 台)"
+            button.toolTip = "ZTE Monitor: Wi-Fi 连接设备数 (\(status.connectedDevices) 台)"
 
         case .traffic:
             let packageUsed = status.packageTotal > 0 ? status.packageTotal : status.monthlyTotal
@@ -180,7 +180,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             } else {
                 button.title = "已用 \(F50Status.formatBytes(packageUsed))"
             }
-            button.toolTip = "F50 Monitor: 套餐流量 (已用: \(F50Status.formatBytes(packageUsed)) / 总量: \(status.trafficLimit > 0 ? F50Status.formatBytes(status.trafficLimit) : "不限"))"
+            button.toolTip = "ZTE Monitor: 套餐流量 (已用: \(F50Status.formatBytes(packageUsed)) / 总量: \(status.trafficLimit > 0 ? F50Status.formatBytes(status.trafficLimit) : "不限"))"
         }
     }
 }

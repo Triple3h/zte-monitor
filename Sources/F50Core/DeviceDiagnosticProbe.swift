@@ -345,7 +345,7 @@ public struct DeviceDiagnosticReport: Codable, Sendable {
             md += "- **联系方式**: `\(contact)`\n"
         }
         md += "- **目标地址**: `\(DiagnosticSanitizer.maskAddress(targetBaseURL))`\n"
-        md += "- **客户端环境**: macOS / iOS (\(osVersion)), F50 Monitor v\(appVersion)\n\n"
+        md += "- **客户端环境**: macOS / iOS (\(osVersion)), ZTE Monitor v\(appVersion)\n\n"
 
         md += "## 📝 详细问题描述\n\n"
         md += "\(userNotes.isEmpty ? "（用户未输入详细说明）" : userNotes)\n\n"

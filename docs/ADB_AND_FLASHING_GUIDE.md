@@ -44,7 +44,7 @@
 
 ## 二、开启 ADB 调试模式
 
-开启 ADB 后，不仅可以通过桌面端进行状态控制，[**F50 Monitor**](../README.md) 也可通过 5555 端口原生读取 CPU 负载、内存、芯片温度及 QCI 签约速率。
+开启 ADB 后，不仅可以通过桌面端进行状态控制，[**ZTE Monitor**](../README.md) 也可通过 5555 端口原生读取 CPU 负载、内存、芯片温度及 QCI 签约速率。
 
 ### 2.1 中兴原生设备（F50 / V50 / U30 / M3 等）
 
@@ -258,4 +258,4 @@ ZTE-F50_FLYMODEM_ZYV1.0.0B09/          # 固件包根目录
 
 ---
 
-> 📖 **回到项目首页**：[返回 F50 Monitor README](../README.md)
+> 📖 **回到项目首页**：[返回 ZTE Monitor README](../README.md)

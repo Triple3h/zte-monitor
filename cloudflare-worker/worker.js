@@ -1,5 +1,5 @@
 /**
- * F50 Monitor - 设备适配与问题诊断反馈接收网关 (Cloudflare Worker)
+ * ZTE Monitor - 设备适配与问题诊断反馈接收网关 (Cloudflare Worker)
  *
  * 包含：
  * 1. 强类型/Schema 校验与 512KB 请求体大小限制
@@ -215,7 +215,7 @@ export default {
 - **设备型号**: **${escapeMarkdown(safeDeviceModel)}**
 - **目标网关**: \`${escapeMarkdown(publicTarget || "未记录")}\`
 - **联系方式**: ${maskedContact ? `\`${maskedContact}\` *(已掩码)*` : "未提供"}
-- **客户端环境**: F50 Monitor v${escapeMarkdown(safeAppVersion)} (${escapeMarkdown(safeOSVersion)})
+- **客户端环境**: ZTE Monitor v${escapeMarkdown(safeAppVersion)} (${escapeMarkdown(safeOSVersion)})
 - **有效接口探测**: ${successfulProbes} / ${totalProbes}
 - **诊断编号**: \`${id}\`
 ${storedInKV ? `- **私有存储**: 🟢 已保存至 KV (\`report:${id}\`)\n` : ''}
@@ -322,7 +322,7 @@ ${escapeMarkdown(JSON.stringify(publicEndpointSummary, null, 2))}
           body: JSON.stringify({
             msg_type: "text",
             text: {
-              content: `【F50 Monitor 用户反馈】\n类型: ${safeCategory}\n设备: ${safeDeviceModel}\n联系方式: ${maskedContact || "未留"}\n说明: ${publicNotes.substring(0, 100)}\n${githubIssueUrl ? `Issue: ${githubIssueUrl}` : ""}${storedInKV ? `\nKV存储: report:${id}` : ""}`
+              content: `【ZTE Monitor 用户反馈】\n类型: ${safeCategory}\n设备: ${safeDeviceModel}\n联系方式: ${maskedContact || "未留"}\n说明: ${publicNotes.substring(0, 100)}\n${githubIssueUrl ? `Issue: ${githubIssueUrl}` : ""}${storedInKV ? `\nKV存储: report:${id}` : ""}`
             }
           })
         });

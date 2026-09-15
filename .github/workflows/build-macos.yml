@@ -25,7 +25,7 @@ jobs:
       - name: Build macOS App
         run: |
           swift build -c release -Xswiftc -strict-concurrency=minimal
-          APP_DIR="F50 Monitor.app"
+          APP_DIR="ZTE Monitor.app"
           MACOS_DIR="$APP_DIR/Contents/MacOS"
           RESOURCES_DIR="$APP_DIR/Contents/Resources"
           rm -rf "$APP_DIR"
@@ -58,7 +58,7 @@ jobs:
               <key>CFBundleIdentifier</key>
               <string>com.f50.monitor</string>
               <key>CFBundleName</key>
-              <string>F50 Monitor</string>
+              <string>ZTE Monitor</string>
               <key>CFBundlePackageType</key>
               <string>APPL</string>
               <key>CFBundleShortVersionString</key>
@@ -83,25 +83,25 @@ jobs:
           chmod +x "$MACOS_DIR/F50Monitor"
           codesign --force --sign - --timestamp=none "$APP_DIR"
 
-          ditto -c -k --keepParent "F50 Monitor.app" f50-monitor-macos.zip
-          cp f50-monitor-macos.zip F50.Monitor.zip
+          ditto -c -k --keepParent "ZTE Monitor.app" zte-monitor-macos.zip
+          cp zte-monitor-macos.zip ZTE.Monitor.zip
 
       - name: Upload macOS Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: F50-Monitor-macOS
+          name: ZTE-Monitor-macOS
           if-no-files-found: ignore
           path: |
-            f50-monitor-macos.zip
-            F50.Monitor.zip
+            zte-monitor-macos.zip
+            ZTE.Monitor.zip
 
       - name: Release App (On Tag)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            f50-monitor-macos.zip
-            F50.Monitor.zip
+            zte-monitor-macos.zip
+            ZTE.Monitor.zip
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-cli/schema.json",
-  "productName": "F50 Monitor",
+  "productName": "ZTE Monitor",
   "version": "2.5.0",
   "identifier": "com.f50.monitor",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "F50 Monitor",
+        "title": "ZTE Monitor",
         "width": 380,
         "height": 580,
         "resizable": false,

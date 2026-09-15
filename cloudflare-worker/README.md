@@ -1,4 +1,4 @@
-# ☁️ F50 Monitor - 诊断反馈收集 Worker (Cloudflare Worker)
+# ☁️ ZTE Monitor - 诊断反馈收集 Worker (Cloudflare Worker)
 
 用于接收应用端「一键自动提交」的设备脱敏诊断报告，自动在 GitHub 仓库创建 Issue 或推送到飞书/企业微信/钉钉群，实现 0 服务器维护成本的一键反馈通道。
 

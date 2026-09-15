@@ -57,22 +57,22 @@ jobs:
       - name: Prepare Named Binaries
         shell: bash
         run: |
-          cp windows/src-tauri/target/${{ matrix.target }}/release/f50-monitor.exe f50-monitor-windows-${{ matrix.arch }}.exe
+          cp windows/src-tauri/target/${{ matrix.target }}/release/zte-monitor.exe zte-monitor-windows-${{ matrix.arch }}.exe
 
       - name: Upload Windows Artifacts (${{ matrix.arch }})
         uses: actions/upload-artifact@v4
         with:
-          name: F50-Monitor-Windows-${{ matrix.arch }}
+          name: ZTE-Monitor-Windows-${{ matrix.arch }}
           if-no-files-found: ignore
           path: |
-            f50-monitor-windows-${{ matrix.arch }}.exe
+            zte-monitor-windows-${{ matrix.arch }}.exe
 
       - name: Release App (On Tag)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            f50-monitor-windows-${{ matrix.arch }}.exe
+            zte-monitor-windows-${{ matrix.arch }}.exe
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

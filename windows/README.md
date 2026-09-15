@@ -1,4 +1,4 @@
-# F50 Monitor for Windows ⚡ (Tauri + Rust + Vue 3)
+# ZTE Monitor for Windows ⚡ (Tauri + Rust + Vue 3)
 
 专为中兴 (ZTE) F50 5G 随身 WiFi (MiFi) 打造的 Windows 任务栏系统托盘轻量监控应用。基于 **Tauri 2.0 (Rust) + Vue 3 + Vite** 构建，内存占用低（~35MB），体积小巧（~10MB）。
 

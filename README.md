@@ -1,8 +1,8 @@
-# F50 Monitor ⚡
+# ZTE Monitor ⚡
 
 面向中兴 (ZTE) F50 / V50 5G 随身 WiFi (MiFi) 的桌面端（macOS / Windows）状态监控与短信管理应用。
 
-![F50 Monitor 2.0 功能海报](assets/f50-monitor-v2.0-poster.jpg)
+![ZTE Monitor 2.0 功能海报](assets/zte-monitor-v2.0-poster.jpg)
 
 > 💡 **提示**：应用已实现数据通道全面重构，不再主要依赖 UFI 高级后台代理。只需设备开启 ADB，应用即可通过 5555 端口原生 Socket 读取 CPU/内存占用率、芯片温度及 QCI 签约速率等全量指标。数据接口按优先级 **80 (中兴 Router 后台) ➔ 5555 (原生 ADB 调试端口) ➔ 2333 (UFI 高级后台)** 自动无缝降级与回退；理论上也适用于其他已开启 ADB 的展锐/高通随身 WiFi 设备。
 > 
@@ -21,7 +21,7 @@
 
 ## 📖 玩机与设备配置指南
 
-想要充分发挥 F50 Monitor 的全部硬件监控特性（如 QCI 速率、实时温度与 CPU/内存占用），建议开启设备的 ADB 调试端口。
+想要充分发挥 ZTE Monitor 的全部硬件监控特性（如 QCI 速率、实时温度与 CPU/内存占用），建议开启设备的 ADB 调试端口。
 
 我们整理了详尽的设备玩机指引文档：
 👉 [**中兴 F50 / 飞猫 U20 开启 ADB、改串与刷机全指南 🛠️**](docs/ADB_AND_FLASHING_GUIDE.md)
@@ -41,9 +41,9 @@
 
 | 平台 / 设备 | 推荐下载文件 | 说明 |
 | :--- | :--- | :--- |
-| 🍏 **macOS (苹果电脑)** | [**`f50-monitor-macos.zip`**](https://github.com/koldllc/f50-monitor/releases/latest) | 菜单栏常驻工具，解压即用（支持 Apple Silicon M 系列芯片与 Intel Mac） |
-| 🪟 **Windows (主流电脑)** | [**`f50-monitor-windows-x64.exe`**](https://github.com/koldllc/f50-monitor/releases/latest) | 适用 99% 常见 Windows 电脑（Intel / AMD 处理器），绿色单文件免安装 |
-| 🪟 **Windows (ARM 设备)** | [**`f50-monitor-windows-arm64.exe`**](https://github.com/koldllc/f50-monitor/releases/latest) | 适用高通骁龙 ARM 架构 Windows 设备（如 Surface Pro 11 等） |
+| 🍏 **macOS (苹果电脑)** | [**`zte-monitor-macos.zip`**](https://github.com/koldllc/f50-monitor/releases/latest) | 菜单栏常驻工具，解压即用（支持 Apple Silicon M 系列芯片与 Intel Mac） |
+| 🪟 **Windows (主流电脑)** | [**`zte-monitor-windows-x64.exe`**](https://github.com/koldllc/f50-monitor/releases/latest) | 适用 99% 常见 Windows 电脑（Intel / AMD 处理器），绿色单文件免安装 |
+| 🪟 **Windows (ARM 设备)** | [**`zte-monitor-windows-arm64.exe`**](https://github.com/koldllc/f50-monitor/releases/latest) | 适用高通骁龙 ARM 架构 Windows 设备（如 Surface Pro 11 等） |
 
 > 🍏 **macOS 首次运行提示**：若提示“未识别的开发者”，请在 macOS **系统设置 ➔ 隐私与安全性** 中点击“仍要打开”。  
 

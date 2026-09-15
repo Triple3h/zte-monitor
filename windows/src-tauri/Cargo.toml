@@ -1,12 +1,12 @@
 [package]
-name = "f50-monitor"
+name = "zte-monitor"
 version = "2.2.1"
 description = "ZTE F50 5G MiFi Status Monitor for Windows"
 authors = ["koldllc"]
 edition = "2021"
 
 [lib]
-name = "f50_monitor_lib"
+name = "zte_monitor_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

@@ -9,7 +9,7 @@ pub fn create_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let ufi_i = MenuItem::with_id(app, "open_ufi", "UFI后台（2333端口）", true, None::<&str>)?;
     let router_i = MenuItem::with_id(app, "open_router", "中兴后台（80端口）", true, None::<&str>)?;
     let refresh_i = MenuItem::with_id(app, "refresh", "立即刷新", true, None::<&str>)?;
-    let quit_i = MenuItem::with_id(app, "quit", "退出 F50 Monitor", true, None::<&str>)?;
+    let quit_i = MenuItem::with_id(app, "quit", "退出 ZTE Monitor", true, None::<&str>)?;
 
     let menu = Menu::with_items(app, &[&show_i, &ufi_i, &router_i, &refresh_i, &quit_i])?;
 
@@ -17,7 +17,7 @@ pub fn create_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         .or_else(|| app.default_window_icon().cloned());
 
     let mut tray_builder = TrayIconBuilder::with_id("f50_tray")
-        .tooltip("F50 Monitor")
+        .tooltip("ZTE Monitor")
         .menu(&menu)
         .show_menu_on_left_click(false);
 

@@ -481,7 +481,7 @@ public struct SettingsView: View {
 
                 HStack {
                     VStack(alignment: .leading, spacing: detailSpacing) {
-                        Text("F50 Monitor v\(updateManager.currentVersion)")
+                        Text("ZTE Monitor v\(updateManager.currentVersion)")
                             .font(itemTitleFont)
                         Text(updateManager.statusText)
                             .font(descriptionFont)

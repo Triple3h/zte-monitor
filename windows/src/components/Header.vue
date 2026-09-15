@@ -9,7 +9,7 @@
 
       <div class="header-info">
         <div class="title-row">
-          <span class="device-name">F50 Monitor</span>
+          <span class="device-name">ZTE Monitor</span>
           <span :class="['badge-pill', networkBadgeClass]">
             {{ state.status.isOnline ? state.status.networkType : '离线' }}
           </span>
