@@ -53,6 +53,7 @@ function mockInvoke(cmd, args) {
         monthlyTx: 8 * 1024 * 1024 * 1024,
         dailyRx: 1.8 * 1024 * 1024 * 1024,
         dailyTx: 400 * 1024 * 1024,
+        trackedDaily: 0,
         packageRx: 53 * 1024 * 1024 * 1024,
         packageTx: 10 * 1024 * 1024 * 1024,
         packageTotal: 63 * 1024 * 1024 * 1024,
@@ -136,6 +137,7 @@ export const state = reactive({
     monthlyTx: 0,
     dailyRx: 0,
     dailyTx: 0,
+    trackedDaily: 0,
     packageRx: 0,
     packageTx: 0,
     packageTotal: 0,
@@ -240,12 +242,16 @@ export const computedTraffic = computed(() => {
   if (ratio >= 0.9) color = 'var(--color-red)';
   else if (ratio >= 0.75) color = 'var(--color-orange)';
 
+  const nativeDaily = state.status.dailyRx + state.status.dailyTx;
+
   return {
     packageUsed,
     limit,
     ratio,
     color,
-    todayUsed: state.status.ufiDailyUsage > 0 ? state.status.ufiDailyUsage : state.status.dailyRx + state.status.dailyTx,
+    todayUsed: state.status.ufiDailyUsage > 0
+      ? state.status.ufiDailyUsage
+      : (nativeDaily > 0 ? nativeDaily : (state.status.trackedDaily || 0)),
     monthUsed: state.status.ufiMonthlyUsage > 0 ? state.status.ufiMonthlyUsage : state.status.monthlyRx + state.status.monthlyTx
   };
 });

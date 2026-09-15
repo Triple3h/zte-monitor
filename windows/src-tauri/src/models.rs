@@ -38,6 +38,8 @@ pub struct F50Status {
     pub monthly_tx: u64,
     pub daily_rx: u64,
     pub daily_tx: u64,
+    /// 设备不上报 day_* 计数器时的「当日流量」本地观测增量（F50 Pro 等机型）
+    pub tracked_daily: u64,
     pub traffic_limit: u64,
     pub package_rx: u64,
     pub package_tx: u64,
@@ -80,6 +82,7 @@ impl Default for F50Status {
             monthly_tx: 0,
             daily_rx: 0,
             daily_tx: 0,
+            tracked_daily: 0,
             traffic_limit: 0,
             package_rx: 0,
             package_tx: 0,

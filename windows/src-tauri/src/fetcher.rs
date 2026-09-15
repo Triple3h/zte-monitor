@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 use reqwest::header::{HeaderMap, HeaderValue, COOKIE, REFERER, CONTENT_TYPE};
@@ -21,6 +21,7 @@ pub struct F50Fetcher {
     last_traffic_refresh: Arc<RwLock<Option<Instant>>>,
     last_adb_hardware_refresh: Arc<RwLock<Option<Instant>>>,
     last_qos_refresh: Arc<RwLock<Option<Instant>>>,
+    daily_tracker: Mutex<DailyTrafficTracker>,
 }
 
 impl F50Fetcher {
@@ -41,6 +42,7 @@ impl F50Fetcher {
             last_traffic_refresh: Arc::new(RwLock::new(None)),
             last_adb_hardware_refresh: Arc::new(RwLock::new(None)),
             last_qos_refresh: Arc::new(RwLock::new(None)),
+            daily_tracker: Mutex::new(DailyTrafficTracker::new()),
         }
     }
 
@@ -417,7 +419,8 @@ impl F50Fetcher {
         // V50 (MU3351) reports hardware metrics via temperature / cpu_temp;
         // keep ic_temp for older F50 firmware.
         let status_commands = "usb_port_switch,battery_charging,sms_received_flag,sms_unread_num,sms_sim_unread_num,sim_msisdn,battery_value,battery_vol_percent,network_signalbar,network_rssi,cr_version,iccid,imei,imsi,ipv6_wan_ipaddr,lan_ipaddr,mac_address,msisdn,network_information,Lte_ca_status,rssi,Z5g_rsrp,Z5g_snr,lte_rsrp,wifi_access_sta_num,loginfo,realtime_rx_thrpt,realtime_tx_thrpt,network_type,network_provider,ppp_status,temperature,cpu_temp,internal_temperature,ic_temp,cpu_utility,mem_utility,5g_rsrp,5g_rsrq,5g_snr,lte_rsrq,lte_snr,signalbar,qci,ambr,dl_ambr,ul_ambr";
-        let traffic_commands = "realtime_rx_bytes,realtime_tx_bytes,monthly_tx_bytes,monthly_rx_bytes,day_rx_bytes,day_tx_bytes,data_volume_limit_size,data_volume_limit_unit,data_volume_clear_date,monthly_clear_date,billing_day,reset_day,traffic_clear_date,clear_date";
+        // flux_* 组显式请求：F50 Pro 的套餐限额/清零日只在这组键里（data_volume_* 回显空串）
+        let traffic_commands = "realtime_rx_bytes,realtime_tx_bytes,monthly_tx_bytes,monthly_rx_bytes,day_rx_bytes,day_tx_bytes,data_volume_limit_size,data_volume_limit_unit,data_volume_clear_date,monthly_clear_date,billing_day,reset_day,traffic_clear_date,clear_date,flux_monthly_rx_bytes,flux_monthly_tx_bytes,flux_realtime_rx_bytes,flux_realtime_tx_bytes,flux_data_volume_limit_size,flux_data_volume_limit_unit,flux_data_volume_limit_switch,flux_clear_date";
         let commands = if refresh_traffic {
             format!("{status_commands},{traffic_commands}")
         } else {
@@ -444,7 +447,7 @@ impl F50Fetcher {
 
     async fn fetch_ufi_status(&self, ufi_base: &str, token: &str, refresh_traffic: bool) -> Result<Value, String> {
         let status_commands = "status,battery_value,battery_charging,wifi_access_sta_num,network_provider,network_type,signalbar,network_signalbar,network_information,realtime_rx_thrpt,realtime_tx_thrpt,cpu_utility,mem_utility,ic_temp,cpu_temp,sms_unread_num,sms_sim_unread_num,qci,dl_ambr,ul_ambr,Z5g_rsrp,5g_rsrp,lte_rsrp,Z5g_snr,5g_snr,lte_snr,5g_rsrq,lte_rsrq,Nr_snr,nr_snr,sinr";
-        let traffic_commands = "realtime_rx_bytes,realtime_tx_bytes,monthly_rx_bytes,monthly_tx_bytes,total_rx_bytes,total_tx_bytes,day_rx_bytes,day_tx_bytes,data_volume_limit_size,data_volume_limit_unit,data_volume_clear_date,monthly_clear_date";
+        let traffic_commands = "realtime_rx_bytes,realtime_tx_bytes,monthly_rx_bytes,monthly_tx_bytes,total_rx_bytes,total_tx_bytes,day_rx_bytes,day_tx_bytes,data_volume_limit_size,data_volume_limit_unit,data_volume_clear_date,monthly_clear_date,flux_monthly_rx_bytes,flux_monthly_tx_bytes,flux_data_volume_limit_size,flux_data_volume_limit_unit,flux_clear_date";
         let commands = if refresh_traffic {
             format!("{status_commands},{traffic_commands}")
         } else {
@@ -706,6 +709,8 @@ impl F50Fetcher {
                 map.insert(k.to_lowercase(), v);
             }
         }
+        // 80 与 2333 都可能只给 flux_* 备用键（F50 Pro 的套餐限额/清零日就是如此）
+        apply_traffic_aliases(&mut map, payload);
 
         // 1. Network Type
         let raw_type = map.get("network_type").and_then(|v| v.as_str()).unwrap_or("").trim();
@@ -843,6 +848,15 @@ impl F50Fetcher {
             if let Some(tx) = map.get("day_tx_bytes").or_else(|| map.get("today_tx_bytes")).and_then(|v| parse_u64(v)) {
                 status.daily_tx = tx;
             }
+
+            // 设备（如 F50 Pro）不上报 day_* 计数器时，用月度累计的相邻采样增量兜底，
+            // 避免把整月累计误报成当日流量。
+            let today = Local::now().format("%Y-%m-%d").to_string();
+            let monthly_total = status.monthly_rx + status.monthly_tx;
+            status.tracked_daily = match self.daily_tracker.lock() {
+                Ok(mut tracker) => tracker.record(&today, monthly_total),
+                Err(poisoned) => poisoned.into_inner().record(&today, monthly_total),
+            };
 
             let limit_size = map.get("data_volume_limit_size");
             let limit_unit = map.get("data_volume_limit_unit");
@@ -1255,6 +1269,112 @@ fn parse_f64(v: &Value) -> Option<f64> {
     None
 }
 
+/// 设备把"不支持的键"回显为空串（F50 Pro 的 data_volume_* 就是如此），空值一律视为缺失。
+fn value_is_blank(v: &Value) -> bool {
+    match v {
+        Value::Null => true,
+        Value::String(s) => s.trim().is_empty(),
+        _ => false,
+    }
+}
+
+fn find_ci<'a>(obj: &'a serde_json::Map<String, Value>, key: &str) -> Option<&'a Value> {
+    obj.iter().find(|(k, _)| k.eq_ignore_ascii_case(key)).map(|(_, v)| v)
+}
+
+/// 补齐 `flux_*` 备用键：F50 Pro（MU3356 / F50ProV1.0.0B25）实测 80 端口把
+/// `data_volume_limit_size`、`data_volume_clear_date` 回显为空串，真值只出现在
+/// `flux_data_volume_limit_size`（"200_1024"，即 200GB）与 `flux_clear_date`（"1"）里，
+/// 月度累计同样有 `flux_monthly_rx_bytes` / `flux_monthly_tx_bytes` 两份。
+fn apply_traffic_aliases<'a>(map: &mut HashMap<String, &'a Value>, payload: &'a Value) {
+    let Some(obj) = payload.as_object() else { return };
+
+    let aliases: [(&str, &[&str]); 8] = [
+        ("monthly_rx_bytes", &["flux_monthly_rx_bytes"]),
+        ("monthly_tx_bytes", &["flux_monthly_tx_bytes"]),
+        ("realtime_rx_bytes", &["flux_realtime_rx_bytes"]),
+        ("realtime_tx_bytes", &["flux_realtime_tx_bytes"]),
+        ("data_volume_limit_size", &["flux_data_volume_limit_size"]),
+        ("data_volume_limit_unit", &["flux_data_volume_limit_unit"]),
+        ("data_volume_limit_switch", &["flux_data_volume_limit_switch"]),
+        ("data_volume_clear_date", &["flux_clear_date"]),
+    ];
+
+    for (target, candidates) in aliases {
+        if map.get(target).is_some_and(|existing| !value_is_blank(existing)) {
+            continue;
+        }
+        for alias in candidates {
+            if let Some(value) = find_ci(obj, alias) {
+                if !value_is_blank(value) {
+                    map.insert(target.to_string(), value);
+                    break;
+                }
+            }
+        }
+    }
+}
+
+/// 设备不上报 day_*_bytes 时的「当日流量」兜底（F50 Pro 实测 day_* 与 total_* 全为空串）。
+///
+/// 按「相邻采样增量」累加，而不是「当日基线差值」：后者一旦设备计数器出现脏值，
+/// 基线会变小，整个月度累计就会被当成当日流量（面板表现为「当日流量 ≈ 本月已用」）。
+///
+/// 计数器回退分两种情况：
+/// - 瞬时脏值：回退后又恢复到原高水位 → 恢复过程不计入；
+/// - 真实重置（换卡 / 重启 / 账单周期）：回到低位后重新增长 → 继续按增量累加。
+struct DailyTrafficTracker {
+    day: String,
+    last_sample: u64,
+    observed: u64,
+    dip_sample: Option<u64>,
+}
+
+impl DailyTrafficTracker {
+    fn new() -> Self {
+        Self {
+            day: String::new(),
+            last_sample: 0,
+            observed: 0,
+            dip_sample: None,
+        }
+    }
+
+    fn record(&mut self, today: &str, monthly_total: u64) -> u64 {
+        // 跨天：当日首次采样只作为基线，不计入增量。
+        if self.day != today {
+            self.day = today.to_string();
+            self.observed = 0;
+            self.last_sample = monthly_total;
+            self.dip_sample = None;
+            return self.observed;
+        }
+
+        if let Some(dip) = self.dip_sample {
+            if monthly_total >= self.last_sample {
+                self.last_sample = monthly_total;
+                self.dip_sample = None;
+                return self.observed;
+            }
+            if monthly_total >= dip {
+                self.observed += monthly_total - dip;
+            }
+            self.dip_sample = Some(monthly_total);
+            return self.observed;
+        }
+
+        if monthly_total >= self.last_sample {
+            self.observed += monthly_total - self.last_sample;
+            self.last_sample = monthly_total;
+        } else {
+            // 计数器回退：先记住低位，等下一次采样判断是脏值还是真实重置。
+            self.dip_sample = Some(monthly_total);
+        }
+
+        self.observed
+    }
+}
+
 fn parse_reset_day(v: &Value) -> Option<i32> {
     if let Some(i) = v.as_i64() { return Some(i as i32); }
     if let Some(s) = v.as_str() {
@@ -1394,4 +1514,95 @@ fn decode_sms_content(raw: &str) -> String {
 
     // 3. 原始字符串回退
     trimmed.to_string()
+}
+
+#[cfg(test)]
+mod traffic_tests {
+    use super::*;
+
+    fn lookup_map(payload: &Value) -> HashMap<String, &Value> {
+        let mut map: HashMap<String, &Value> = HashMap::new();
+        if let Some(obj) = payload.as_object() {
+            for (k, v) in obj {
+                map.insert(k.to_lowercase(), v);
+            }
+        }
+        map
+    }
+
+    /// 真机抓包：F50 Pro（MU3356 / F50ProV1.0.0B25）把 data_volume_* / day_* / total_*
+    /// 全部回显为空串，套餐限额与清零日只出现在 flux_* 键里。
+    #[test]
+    fn flux_aliases_fill_blank_canonical_keys() {
+        let payload: Value = serde_json::json!({
+            "monthly_rx_bytes": 66_336_182_109u64,
+            "day_rx_bytes": "",
+            "data_volume_limit_size": "",
+            "data_volume_limit_unit": "",
+            "data_volume_clear_date": "",
+            "flux_data_volume_limit_size": "200_1024",
+            "flux_data_volume_limit_unit": "data",
+            "flux_clear_date": "1"
+        });
+
+        let mut map = lookup_map(&payload);
+        apply_traffic_aliases(&mut map, &payload);
+
+        let limit = parse_traffic_limit(
+            map.get("data_volume_limit_size").copied(),
+            map.get("data_volume_limit_unit").copied(),
+        );
+        assert_eq!(limit, 200 * 1024 * 1024 * 1024);
+        assert_eq!(parse_reset_day(map.get("data_volume_clear_date").copied().unwrap()), Some(1));
+    }
+
+    #[test]
+    fn non_blank_canonical_keys_win_over_flux_aliases() {
+        let payload: Value = serde_json::json!({
+            "monthly_rx_bytes": "111",
+            "flux_monthly_rx_bytes": "222"
+        });
+
+        let mut map = lookup_map(&payload);
+        apply_traffic_aliases(&mut map, &payload);
+
+        assert_eq!(map.get("monthly_rx_bytes").and_then(|v| parse_u64(v)), Some(111));
+    }
+
+    /// 旧实现按「当日基线差值」推算当日流量：基线一旦是脏值，整个本月累计会被当成当日用量。
+    #[test]
+    fn daily_tracker_ignores_dirty_counter_dip() {
+        let monthly: u64 = 83_955_279_238;
+        let mut tracker = DailyTrafficTracker::new();
+
+        assert_eq!(tracker.record("2026-09-15", monthly), 0);
+        assert_eq!(tracker.record("2026-09-15", monthly + 5_000_000), 5_000_000);
+        // 计数器瞬时掉到 1.8MB：不入账
+        assert_eq!(tracker.record("2026-09-15", 1_890_443), 5_000_000);
+        // 恢复到原水位：恢复过程整体不计入
+        assert_eq!(tracker.record("2026-09-15", monthly + 9_000_000), 5_000_000);
+        // 之后继续按增量累加
+        assert_eq!(tracker.record("2026-09-15", monthly + 11_000_000), 7_000_000);
+    }
+
+    #[test]
+    fn daily_tracker_keeps_accumulating_after_real_reset() {
+        let monthly: u64 = 83_955_279_238;
+        let mut tracker = DailyTrafficTracker::new();
+        tracker.record("2026-09-15", monthly);
+        assert_eq!(tracker.record("2026-09-15", monthly + 5_000_000), 5_000_000);
+
+        // 换卡 / 重启导致计数器归零，归零后的增长仍属于当日
+        assert_eq!(tracker.record("2026-09-15", 0), 5_000_000);
+        assert_eq!(tracker.record("2026-09-15", 6_000_000), 11_000_000);
+    }
+
+    #[test]
+    fn daily_tracker_resets_on_new_day() {
+        let mut tracker = DailyTrafficTracker::new();
+        tracker.record("2026-09-15", 1_000);
+        assert_eq!(tracker.record("2026-09-15", 1_500), 500);
+        assert_eq!(tracker.record("2026-09-16", 2_000), 0);
+        assert_eq!(tracker.record("2026-09-16", 2_400), 400);
+    }
 }
