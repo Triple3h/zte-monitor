@@ -53,10 +53,10 @@ choose_branch() {
 
 choose_branch
 
-echo "🔨 正在编译 macOS F50 Monitor 菜单栏程序..."
+echo "🔨 正在编译 macOS ZTE Monitor 菜单栏程序..."
 swift build -c release
 
-APP_DIR="F50 Monitor.app"
+APP_DIR="ZTE Monitor.app"
 MACOS_DIR="$APP_DIR/Contents/MacOS"
 RESOURCES_DIR="$APP_DIR/Contents/Resources"
 
@@ -85,7 +85,7 @@ cat << 'EOF' > "$APP_DIR/Contents/Info.plist"
     <key>CFBundleIdentifier</key>
     <string>com.f50.monitor</string>
     <key>CFBundleName</key>
-    <string>F50 Monitor</string>
+    <string>ZTE Monitor</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -111,14 +111,28 @@ chmod +x "$MACOS_DIR/F50Monitor"
 codesign --force --sign - --timestamp=none "$APP_DIR"
 codesign --verify --deep --strict --verbose=2 "$APP_DIR"
 
+# 先退出正在运行的实例：运行中的 App 会让 /Applications 下的替换静默失败
+echo "🔄 正在退出旧实例..."
+killall F50Monitor 2>/dev/null || true
+sleep 0.5
+
+# 清理旧品牌（F50 Monitor.app）残留，避免同时存在两个 App
+rm -rf "/Applications/F50 Monitor.app"
+rm -rf "F50 Monitor.app"
+
 if [ -d "/Applications/$APP_DIR" ]; then
     rm -rf "/Applications/$APP_DIR"
 fi
 cp -R "$APP_DIR" "/Applications/$APP_DIR"
 
+# 校验安装结果：装进 /Applications 的可执行文件必须与刚构建的一致，
+# 否则会出现"提示安装成功、实际仍是旧包"的情况
+if ! cmp -s "$MACOS_DIR/F50Monitor" "/Applications/$APP_DIR/Contents/MacOS/F50Monitor"; then
+    echo "❌ 安装校验失败：/Applications/$APP_DIR 中的可执行文件与刚构建的不一致" >&2
+    exit 1
+fi
+
 echo "✅ 构建完成！已自动更新至 /Applications/$APP_DIR"
 
-echo "🔄 正在重启 F50 Monitor..."
-killall F50Monitor 2>/dev/null || true
-sleep 0.5
+echo "🔄 正在启动 ZTE Monitor..."
 open "/Applications/$APP_DIR"
